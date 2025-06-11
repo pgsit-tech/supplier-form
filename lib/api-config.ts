@@ -7,7 +7,7 @@
 export const API_CONFIG = {
   // 根据环境自动选择 API 基础 URL
   BASE_URL: process.env.NODE_ENV === 'production'
-    ? process.env.NEXT_PUBLIC_API_URL || 'https://supplier-form-api.itsupport-5c8.workers.dev'
+    ? process.env.NEXT_PUBLIC_API_URL || 'https://supplier-api.pgs-log.cn'
     : 'http://localhost:3000',
   
   // 请求超时时间（毫秒）
