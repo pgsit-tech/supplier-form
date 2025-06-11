@@ -19,6 +19,7 @@ import {
   companyTypeOptions,
   agreementOptions,
 } from '../lib/validations'
+import { buildApiUrl, API_ENDPOINTS } from '../lib/api-config'
 
 export default function Home() {
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -42,7 +43,10 @@ export default function Home() {
   const onSubmit = async (data: SupplierFormData) => {
     setIsSubmitting(true)
     try {
-      const response = await fetch('/api/submit-form', {
+      // 使用 API 配置
+      const apiUrl = buildApiUrl(API_ENDPOINTS.SUBMIT_FORM);
+
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
