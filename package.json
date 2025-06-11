@@ -8,7 +8,8 @@
     "build:static": "node scripts/build-frontend.js",
     "start": "next start",
     "lint": "next lint",
-    "check-deployment": "node scripts/check-deployment.js"
+    "check-deployment": "node scripts/check-deployment.js",
+    "check-deployment-simple": "node scripts/check-deployment-simple.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.1.1",
