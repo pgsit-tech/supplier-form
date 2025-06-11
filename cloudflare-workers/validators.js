@@ -60,31 +60,37 @@ export function validateSupplierForm(data) {
     validatedData.supplierAddress = sanitizeString(data.supplierAddress);
   }
   
-  // 联系人及职务
-  if (!data.contactPersonAndTitle || typeof data.contactPersonAndTitle !== 'string') {
-    errors.push(createError('contactPersonAndTitle', '联系人及职务是必填项'));
-  } else if (data.contactPersonAndTitle.trim().length < 2) {
-    errors.push(createError('contactPersonAndTitle', '联系人及职务至少需要2个字符'));
+  // 联系人及职务（可选）
+  if (data.contactPersonAndTitle && typeof data.contactPersonAndTitle === 'string') {
+    if (data.contactPersonAndTitle.trim().length < 2) {
+      errors.push(createError('contactPersonAndTitle', '联系人及职务至少需要2个字符'));
+    } else {
+      validatedData.contactPersonAndTitle = sanitizeString(data.contactPersonAndTitle);
+    }
   } else {
-    validatedData.contactPersonAndTitle = sanitizeString(data.contactPersonAndTitle);
+    validatedData.contactPersonAndTitle = '';
   }
-  
-  // 联系电话
-  if (!data.contactPhone || typeof data.contactPhone !== 'string') {
-    errors.push(createError('contactPhone', '联系电话是必填项'));
-  } else if (!isValidPhone(data.contactPhone)) {
-    errors.push(createError('contactPhone', '请输入有效的电话号码'));
+
+  // 联系电话（可选）
+  if (data.contactPhone && typeof data.contactPhone === 'string') {
+    if (!isValidPhone(data.contactPhone)) {
+      errors.push(createError('contactPhone', '请输入有效的电话号码'));
+    } else {
+      validatedData.contactPhone = sanitizeString(data.contactPhone);
+    }
   } else {
-    validatedData.contactPhone = sanitizeString(data.contactPhone);
+    validatedData.contactPhone = '';
   }
-  
-  // 联系邮箱
-  if (!data.contactEmail || typeof data.contactEmail !== 'string') {
-    errors.push(createError('contactEmail', '联系邮箱是必填项'));
-  } else if (!isValidEmail(data.contactEmail)) {
-    errors.push(createError('contactEmail', '请输入有效的邮箱地址'));
+
+  // 联系邮箱（可选）
+  if (data.contactEmail && typeof data.contactEmail === 'string') {
+    if (data.contactEmail.trim() !== '' && !isValidEmail(data.contactEmail)) {
+      errors.push(createError('contactEmail', '请输入有效的邮箱地址'));
+    } else {
+      validatedData.contactEmail = sanitizeString(data.contactEmail);
+    }
   } else {
-    validatedData.contactEmail = sanitizeString(data.contactEmail);
+    validatedData.contactEmail = '';
   }
   
   // 是否签署协议
