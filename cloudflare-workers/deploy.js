@@ -349,13 +349,11 @@ export function logError(error, context = {}) {
   }));
 }
 
-// Validators  
+// Validators
 /**
  * 数据验证器
  * 基于原有的 Zod 验证逻辑，转换为原生 JavaScript 实现
  */
-
-import { isValidEmail, isValidPhone, sanitizeString } from './utils.js';
 
 // ==================== 验证结果类型 ====================
 
@@ -807,9 +805,7 @@ export function validateEnum(value, fieldName, validValues) {
  * - FRONTEND_URL: 前端域名（用于 CORS）
  */
 
-// 导入工具函数
-import { handleCORS, createResponse, generateId, hashPassword, verifyPassword, generateJWT, verifyJWT } from './utils.js';
-import { validateSupplierForm, validateLogin, validateStatusUpdate } from './validators.js';
+// 所有函数已在上面定义，无需导入
 
 // 路由处理器
 const routes = {
