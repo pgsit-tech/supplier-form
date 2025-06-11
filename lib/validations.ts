@@ -105,9 +105,10 @@ export const supplierFormSchema = z.object({
 
   contactEmail: z
     .string()
-    .email('请输入有效的邮箱地址')
     .optional()
-    .or(z.literal('')),
+    .refine((val) => !val || z.string().email().safeParse(val).success, {
+      message: '请输入有效的邮箱地址'
+    }),
 
   // 协议状态
   agreementSigned: z

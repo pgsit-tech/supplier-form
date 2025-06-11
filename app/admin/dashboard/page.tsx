@@ -169,11 +169,11 @@ export default function AdminDashboard() {
 
   const exportToCSV = () => {
     const headers = [
-      '申请ID', '申请人邮箱', '分公司', '供应商名称', '公司地址', 
+      '申请ID', '申请人邮箱', '分公司', '供应商名称', '公司地址',
       '联系人及职务', '联系电话', '联系邮箱', '协议签署', '主营业务',
       '使用理由', '信息来源', '状态', '提交时间'
     ]
-    
+
     const csvContent = [
       headers.join(','),
       ...filteredApplications.map(app => [
@@ -182,23 +182,27 @@ export default function AdminDashboard() {
         app.applicantBranch,
         `"${app.supplierName}"`,
         `"${app.supplierAddress}"`,
-        `"${app.contactPersonAndTitle}"`,
-        app.contactPhone,
-        app.contactEmail,
+        `"${app.contactPersonAndTitle || ''}"`,
+        app.contactPhone || '',
+        app.contactEmail || '',
         app.agreementSigned,
         `"${app.mainBusiness.join(', ')}"`,
         `"${app.usageReason}"`,
         `"${app.supplierSource}"`,
-        app.status,
-        app.submittedAt
+        app.status === 'pending' ? '待审核' : app.status === 'approved' ? '已批准' : '已拒绝',
+        new Date(app.submittedAt).toLocaleString('zh-CN')
       ].join(','))
     ].join('\n')
-    
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+
+    // 添加 BOM 以确保中文在 Excel 中正确显示
+    const BOM = '\uFEFF'
+    const csvWithBOM = BOM + csvContent
+
+    const blob = new Blob([csvWithBOM], { type: 'text/csv;charset=utf-8;' })
     const link = document.createElement('a')
     const url = URL.createObjectURL(blob)
     link.setAttribute('href', url)
-    link.setAttribute('download', `supplier-applications-${new Date().toISOString().split('T')[0]}.csv`)
+    link.setAttribute('download', `供应商申请数据-${new Date().toISOString().split('T')[0]}.csv`)
     link.style.visibility = 'hidden'
     document.body.appendChild(link)
     link.click()
