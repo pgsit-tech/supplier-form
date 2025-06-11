@@ -1,187 +1,197 @@
-# 供应商系统CODE申请备案表
+# 🏢 供应商系统CODE申请备案表
 
-## 项目概述
+一个基于 Next.js 构建的现代化供应商申请管理系统，支持表单提交、管理员审核和状态管理。
 
-这是一个基于 Next.js 15 的现代化供应商申请表单系统，完全根据 PGS 内部实际表单需求开发。
+## ✨ 功能特性
 
-## 功能特性
+### 📝 用户端功能
+- **智能表单验证**：实时验证用户输入，提供友好的错误提示
+- **响应式设计**：完美适配桌面和移动设备
+- **现代化UI**：使用 Tailwind CSS 构建的美观界面
+- **多步骤表单**：清晰的信息分组和填写流程
 
-### ✅ 完整的表单字段
-- **申请人信息**：邮箱、所属分公司
-- **供应商基本信息**：名称、FM3000 Code、地址
-- **企业详细信息**：创立日期、注册资本、法人代表、注册地、企业性质、纳税人状态
-- **联系信息**：联系人及职务、电话、邮箱
-- **协议状态**：是否已签署协议
-- **主营业务**：多选业务类型（一代、订舱、船東、拖車、倉庫、報關、拼箱、買單報關、其他）
-- **补充信息**：使用理由、信息来源
+### 👨‍💼 管理端功能
+- **安全登录系统**：管理员身份验证和权限控制
+- **申请管理仪表板**：统计概览和申请列表
+- **状态管理**：一键审核通过/拒绝申请
+- **搜索和筛选**：快速查找特定申请
+- **实时数据更新**：状态变更即时反映
 
-### ✅ 技术特性
-- **现代化UI**：基于 Tailwind CSS 的响应式设计
-- **表单验证**：使用 Zod + React Hook Form 进行严格验证
-- **图标系统**：集成 Lucide React 图标
-- **API集成**：完整的前后端数据交互
-- **TypeScript**：完全类型安全的开发体验
+## 🛠️ 技术栈
 
-### ✅ 用户体验
-- **直观的界面**：清晰的分组和视觉层次
-- **实时验证**：即时的错误提示和反馈
-- **响应式设计**：支持桌面和移动设备
-- **加载状态**：提交过程中的视觉反馈
-- **成功页面**：提交成功后的确认界面
+### 前端
+- **Next.js 14** - React 全栈框架
+- **TypeScript** - 类型安全的 JavaScript
+- **Tailwind CSS** - 实用优先的 CSS 框架
+- **React Hook Form** - 高性能表单库
+- **Zod** - TypeScript 优先的数据验证
+- **Lucide React** - 现代图标库
 
-## 技术栈
+### 后端
+- **Next.js API Routes** - 服务端 API
+- **Cloudflare Workers** - 边缘计算平台
+- **Cloudflare KV** - 键值存储
+- **Cloudflare D1** - SQL 数据库（可选）
 
-- **框架**: Next.js 15.3.3
-- **语言**: TypeScript
-- **样式**: Tailwind CSS
-- **表单**: React Hook Form + Zod
-- **图标**: Lucide React
-- **开发工具**: ESLint
+### 部署
+- **Cloudflare Pages** - 静态网站托管
+- **GitHub Actions** - 自动化部署
+- **Git** - 版本控制
 
-## 项目结构
+## 🚀 快速开始
 
-```
-supplier-form-new/
-├── src/
-│   ├── app/
-│   │   ├── api/
-│   │   │   └── submit-form/
-│   │   │       └── route.ts          # API路由
-│   │   ├── globals.css               # 全局样式
-│   │   ├── layout.tsx                # 布局组件
-│   │   └── page.tsx                  # 主页面组件
-│   └── lib/
-│       └── validations.ts            # 表单验证模式
-├── package.json
-├── tailwind.config.ts
-├── tsconfig.json
-└── README.md
+### 环境要求
+- Node.js 18+ 
+- npm 或 yarn
+- Git
+
+### 本地开发
+
+1. **克隆仓库**
+```bash
+git clone https://github.com/your-username/supplier-form-system.git
+cd supplier-form-system
 ```
 
-## 安装和运行
-
-### 1. 安装依赖
+2. **安装依赖**
 ```bash
 npm install
 ```
 
-### 2. 启动开发服务器
+3. **启动开发服务器**
 ```bash
 npm run dev
 ```
 
-### 3. 访问应用
-打开浏览器访问 [http://localhost:3000](http://localhost:3000)
+4. **访问应用**
+- 主表单：http://localhost:3000
+- 管理端：http://localhost:3000/admin/login
 
-## 表单字段说明
+### 管理员账户
+- 用户名：`admin`
+- 密码：`123456`
 
-### 必填字段 (*)
-1. **申请人邮箱** - 有效的邮箱地址
-2. **申请人所属分公司** - 从预定义列表选择
-3. **供应商名称** - 至少2个字符
-4. **供应商公司地址** - 至少5个字符的完整地址
-5. **联系人及职务** - 联系人姓名和职务
-6. **联系电话** - 有效的联系电话
-7. **联系人邮箱** - 有效的邮箱地址
-8. **是否已签署协议** - 选择是或否
-9. **主营业务** - 至少选择一项业务类型
-10. **使用此供应商理由** - 至少10个字符的详细说明
-11. **如何得知此供应商** - 至少10个字符的详细信息
+## 📁 项目结构
 
-### 可选字段
-- FM3000 Code
-- 企业创立日期
-- 注册资本
-- 法人代表
-- 注册地
-- 企业性质
-- 是否为一般纳税人
-
-## 分公司代码
-
-- BJS - 北京
-- CAN - 广州
-- CGO - 郑州
-- NGB - 宁波
-- QDO - 青岛
-- SHA - 上海
-- SZX - 深圳
-- TSN - 天津
-- XMN - 厦门
-
-## 主营业务类型
-
-- 一代 - 一级代理
-- 订舱 - 订舱服务
-- 船東 - 船东服务
-- 拖車 - 拖车运输
-- 倉庫 - 仓储服务
-- 報關 - 报关服务
-- 拼箱 - 拼箱服务
-- 買單報關 - 买单报关
-- 其他 - 其他服务
-
-## API 接口
-
-### POST /api/submit-form
-提交供应商申请表单
-
-**请求体**:
-```json
-{
-  "applicantEmail": "string",
-  "applicantBranch": "string",
-  "supplierName": "string",
-  "supplierAddress": "string",
-  "contactPersonAndTitle": "string",
-  "contactPhone": "string",
-  "contactEmail": "string",
-  "agreementSigned": "string",
-  "mainBusiness": ["string"],
-  "usageReason": "string",
-  "supplierSource": "string",
-  // ... 其他可选字段
-}
+```
+supplier-form-system/
+├── app/                           # Next.js App Router
+│   ├── admin/                     # 管理端页面
+│   │   ├── dashboard/page.tsx     # 管理仪表板
+│   │   └── login/page.tsx         # 管理员登录
+│   ├── api/                       # API路由
+│   │   ├── admin/                 # 管理端API
+│   │   │   ├── applications/      # 申请管理API
+│   │   │   └── login/route.ts     # 登录API
+│   │   └── submit-form/route.ts   # 表单提交API
+│   ├── globals.css                # 全局样式
+│   ├── layout.tsx                 # 根布局
+│   └── page.tsx                   # 主表单页面
+├── lib/                           # 工具库
+│   └── validations.ts             # 表单验证模式
+├── .github/workflows/             # GitHub Actions
+├── public/                        # 静态资源
+├── DEPLOYMENT.md                  # 部署文档
+├── next.config.js                 # Next.js配置
+└── package.json                   # 项目依赖
 ```
 
-**响应**:
-```json
-{
-  "success": true,
-  "message": "申请提交成功",
-  "data": { /* 提交的数据 */ }
-}
+## 🔧 配置说明
+
+### 环境变量
+```env
+NODE_ENV=production
+NEXT_PUBLIC_API_URL=https://your-workers-domain.workers.dev
 ```
 
-## 开发说明
+### 构建命令
+```bash
+# 开发环境
+npm run dev
 
-### 添加新字段
-1. 在 `src/lib/validations.ts` 中更新 `supplierFormSchema`
-2. 在 `src/app/page.tsx` 中添加对应的表单控件
-3. 更新 TypeScript 类型定义
+# 生产构建
+npm run build
 
-### 自定义样式
-- 主要样式在 `src/app/globals.css`
-- 组件样式使用 Tailwind CSS 类名
-- 可以在 `tailwind.config.ts` 中自定义主题
+# 静态导出（用于 Cloudflare Pages）
+npm run build:static
+```
 
-### 部署
-项目可以部署到任何支持 Next.js 的平台：
-- Vercel (推荐)
-- Netlify
-- Cloudflare Pages
-- 自托管服务器
+## 📋 表单字段
 
-## 许可证
+### 申请人信息
+- 申请人邮箱（必填）
+- 申请人所属分公司（必填）
 
-MIT License
+### 供应商基本信息
+- 供应商名称（必填）
+- FM3000 Code（可选）
+- 供应商公司地址（必填）
+- 企业创立日期（可选）
+- 注册资本（可选）
+- 法人代表（可选）
+- 注册地（可选）
+- 企业性质（可选）
+- 是否为一般纳税人（可选）
 
-## 更新日志
+### 业务信息
+- 主营业务类型（必填，多选）
+- 联系人及职务（必填）
+- 联系电话（必填）
+- 联系人邮箱（必填）
+- 是否已签署协议（必填）
 
-### v1.0.0 (2025-06-10)
-- ✅ 初始版本发布
-- ✅ 完整的表单功能
-- ✅ 响应式设计
-- ✅ 表单验证
-- ✅ API集成
-- ✅ 成功页面
+### 补充信息
+- 使用此供应商理由（必填）
+- 如何得知此供应商（必填）
+
+## 🌐 部署指南
+
+详细的部署说明请参考 [DEPLOYMENT.md](./DEPLOYMENT.md)
+
+### 快速部署到 Cloudflare
+
+1. **前端部署（Cloudflare Pages）**
+   - 连接 GitHub 仓库
+   - 设置构建命令：`npm run build:static`
+   - 设置输出目录：`out`
+
+2. **后端部署（Cloudflare Workers）**
+   - 创建 Workers 项目
+   - 配置 KV 存储
+   - 使用 GitHub Actions 自动部署
+
+## 🧪 测试
+
+### 表单测试
+1. 填写完整的供应商信息
+2. 验证必填字段检查
+3. 测试表单提交功能
+
+### 管理端测试
+1. 使用管理员账户登录
+2. 查看申请列表和统计
+3. 测试申请审核功能
+
+## 🤝 贡献指南
+
+1. Fork 项目
+2. 创建功能分支 (`git checkout -b feature/AmazingFeature`)
+3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
+4. 推送到分支 (`git push origin feature/AmazingFeature`)
+5. 开启 Pull Request
+
+## 📄 许可证
+
+本项目采用 MIT 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情
+
+## 📞 支持
+
+如果您在使用过程中遇到问题，请：
+
+1. 查看 [部署文档](./DEPLOYMENT.md)
+2. 检查 [Issues](https://github.com/your-username/supplier-form-system/issues)
+3. 创建新的 Issue 描述问题
+
+---
+
+**由 PGS-IT 团队开发维护** 🚀
