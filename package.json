@@ -5,31 +5,32 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
-    "build:static": "cross-env NODE_ENV=production next build",
+    "build:static": "node scripts/build-frontend.js",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "check-deployment": "node scripts/check-deployment.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.1.1",
+    "@tailwindcss/postcss": "^4.1.8",
+    "autoprefixer": "^10.4.21",
+    "cross-env": "^7.0.3",
     "lucide-react": "^0.513.0",
     "next": "^15.3.3",
+    "postcss": "^8.5.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-hook-form": "^7.57.0",
+    "tailwindcss": "^4.1.8",
     "zod": "^3.25.57"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
-    "@tailwindcss/postcss": "^4.1.8",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "autoprefixer": "^10.4.21",
-    "cross-env": "^7.0.3",
     "eslint": "^9",
     "eslint-config-next": "15.3.3",
-    "postcss": "^8.5.4",
-    "tailwindcss": "^4.1.8",
     "typescript": "^5"
   }
 }
