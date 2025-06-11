@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supplierFormSchema } from '@/lib/validations'
+import { supplierFormSchema } from '../../../lib/validations'
 
 export async function POST(request: NextRequest) {
   try {

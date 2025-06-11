@@ -18,7 +18,7 @@ import {
   businessOptions,
   companyTypeOptions,
   agreementOptions,
-} from '@/lib/validations'
+} from '../lib/validations'
 
 export default function Home() {
   const [isSubmitting, setIsSubmitting] = useState(false)
