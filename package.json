@@ -4,8 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "next build",
+    "build": "node scripts/build-frontend.js",
     "build:static": "node scripts/build-frontend.js",
+    "build:dev": "next build",
     "start": "next start",
     "lint": "next lint",
     "check-deployment": "node scripts/check-deployment.js",

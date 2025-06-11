@@ -9,9 +9,9 @@ const https = require('https');
 
 // 配置信息 - 请替换为您的实际值
 const CONFIG = {
-  ACCOUNT_ID: process.env.CLOUDFLARE_ACCOUNT_ID || 'your-account-id',
-  PROJECT_NAME: process.env.CLOUDFLARE_PROJECT_NAME || 'supplier-form-system',
-  API_TOKEN: process.env.CLOUDFLARE_API_TOKEN || 'your-api-token'
+  ACCOUNT_ID: process.env.CLOUDFLARE_ACCOUNT_ID || '5c86321351ad27065d881d46691a5503',
+  PROJECT_NAME: process.env.CLOUDFLARE_PROJECT_NAME || 'supplier-form',
+  API_TOKEN: process.env.CLOUDFLARE_API_TOKEN || 'tQPTM1HnZFfrSb-I6GZiZM_lJJUJmHiwoWWT35FS'
 };
 
 /**
