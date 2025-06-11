@@ -37,7 +37,8 @@ export default {
     try {
       // 处理 CORS 预检请求
       if (request.method === 'OPTIONS') {
-        return handleCORS();
+        const origin = request.headers.get('Origin');
+        return handleCORS(origin, env.FRONTEND_URL);
       }
 
       const url = new URL(request.url);
@@ -70,7 +71,8 @@ export default {
       const response = await handler(request, env, ctx);
       
       // 添加 CORS 头
-      return addCORSHeaders(response, env.FRONTEND_URL);
+      const requestOrigin = request.headers.get('Origin');
+      return addCORSHeaders(response, env.FRONTEND_URL, requestOrigin);
       
     } catch (error) {
       console.error('Worker 错误:', error);
@@ -120,14 +122,41 @@ function extractParams(routePath, actualPath) {
 }
 
 // 添加 CORS 头
-function addCORSHeaders(response, frontendUrl) {
+function addCORSHeaders(response, frontendUrl, requestOrigin) {
+  // 支持多个前端域名
+  const allowedOrigins = frontendUrl ? frontendUrl.split(',').map(url => url.trim()) : ['*'];
+
+  let allowOrigin = '*';
+  if (requestOrigin && allowedOrigins.length > 0 && !allowedOrigins.includes('*')) {
+    // 检查请求来源是否在允许列表中
+    if (allowedOrigins.includes(requestOrigin)) {
+      allowOrigin = requestOrigin;
+    } else {
+      // 检查是否有匹配的域名（支持子域名）
+      const matchedOrigin = allowedOrigins.find(origin => {
+        if (origin.startsWith('https://') && requestOrigin.startsWith('https://')) {
+          const originDomain = origin.replace('https://', '');
+          const requestDomain = requestOrigin.replace('https://', '');
+          return requestDomain === originDomain || requestDomain.endsWith('.' + originDomain);
+        }
+        return false;
+      });
+      if (matchedOrigin) {
+        allowOrigin = requestOrigin;
+      }
+    }
+  } else if (allowedOrigins.length === 1 && allowedOrigins[0] !== '*') {
+    allowOrigin = allowedOrigins[0];
+  }
+
   const corsHeaders = {
-    'Access-Control-Allow-Origin': frontendUrl || '*',
+    'Access-Control-Allow-Origin': allowOrigin,
     'Access-Control-Allow-Methods': 'GET, POST, PATCH, DELETE, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     'Access-Control-Max-Age': '86400',
+    'Access-Control-Allow-Credentials': 'true',
   };
-  
+
   // 创建新的响应对象，添加 CORS 头
   const newResponse = new Response(response.body, {
     status: response.status,
@@ -137,7 +166,7 @@ function addCORSHeaders(response, frontendUrl) {
       ...corsHeaders
     }
   });
-  
+
   return newResponse;
 }
 

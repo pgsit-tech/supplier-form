@@ -15,14 +15,40 @@ export function createResponse(data, status = 200, headers = {}) {
   });
 }
 
-export function handleCORS() {
+export function handleCORS(origin, allowedOrigins) {
+  // 支持多个前端域名的 CORS 预检
+  const origins = allowedOrigins ? allowedOrigins.split(',').map(url => url.trim()) : ['*'];
+
+  let allowOrigin = '*';
+  if (origin && origins.length > 0 && !origins.includes('*')) {
+    if (origins.includes(origin)) {
+      allowOrigin = origin;
+    } else {
+      // 检查是否有匹配的域名
+      const matchedOrigin = origins.find(allowedOrigin => {
+        if (allowedOrigin.startsWith('https://') && origin.startsWith('https://')) {
+          const allowedDomain = allowedOrigin.replace('https://', '');
+          const requestDomain = origin.replace('https://', '');
+          return requestDomain === allowedDomain || requestDomain.endsWith('.' + allowedDomain);
+        }
+        return false;
+      });
+      if (matchedOrigin) {
+        allowOrigin = origin;
+      }
+    }
+  } else if (origins.length === 1 && origins[0] !== '*') {
+    allowOrigin = origins[0];
+  }
+
   return new Response(null, {
     status: 204,
     headers: {
-      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Origin': allowOrigin,
       'Access-Control-Allow-Methods': 'GET, POST, PATCH, DELETE, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type, Authorization',
       'Access-Control-Max-Age': '86400',
+      'Access-Control-Allow-Credentials': 'true',
     }
   });
 }
