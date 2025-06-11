@@ -94,19 +94,20 @@ export const supplierFormSchema = z.object({
     .string()
     .optional(),
 
-  // 联系信息
+  // 联系信息（可选）
   contactPersonAndTitle: z
     .string()
-    .min(1, '请输入联系人及职务'),
+    .optional(),
 
   contactPhone: z
     .string()
-    .min(1, '请输入联系电话'),
+    .optional(),
 
   contactEmail: z
     .string()
-    .min(1, '请输入联系人邮箱')
-    .email('请输入有效的邮箱地址'),
+    .email('请输入有效的邮箱地址')
+    .optional()
+    .or(z.literal('')),
 
   // 协议状态
   agreementSigned: z

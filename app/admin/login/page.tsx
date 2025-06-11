@@ -5,13 +5,14 @@ import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { 
-  User, 
-  Lock, 
+import {
+  User,
+  Lock,
   AlertCircle,
   Loader2,
   Shield
 } from 'lucide-react'
+import { buildApiUrl, API_ENDPOINTS } from '../../../lib/api-config'
 
 // 登录表单验证模式
 const loginSchema = z.object({
@@ -43,9 +44,12 @@ export default function AdminLogin() {
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true)
     setLoginError('')
-    
+
     try {
-      const response = await fetch('/api/admin/login', {
+      // 使用 API 配置
+      const apiUrl = buildApiUrl(API_ENDPOINTS.ADMIN_LOGIN);
+
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

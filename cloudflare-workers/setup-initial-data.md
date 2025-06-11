@@ -13,15 +13,15 @@
 {
   "id": "admin_001",
   "username": "admin",
-  "passwordHash": "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3",
+  "passwordHash": "43fa4a393b6f4d046d4010740b4078a50e04197c6c08d8fa5575493bcd127c45",
   "name": "PGS系统管理员",
   "role": "admin",
   "email": "admin@pgs.com",
-  "createdAt": "2025-06-11T10:00:00Z",
+  "createdAt": "2025-06-11T04:29:26.072Z",
   "isActive": true
 }
 ```
-**默认密码：** `hello` （请首次登录后立即修改）
+**默认密码：** `hello123` （请首次登录后立即修改）
 
 #### 备用管理员账户
 **键：** `user:pgs-admin`
@@ -30,15 +30,15 @@
 {
   "id": "admin_002",
   "username": "pgs-admin",
-  "passwordHash": "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3",
+  "passwordHash": "43fa4a393b6f4d046d4010740b4078a50e04197c6c08d8fa5575493bcd127c45",
   "name": "PGS备用管理员",
   "role": "admin",
   "email": "pgs-admin@pgs.com",
-  "createdAt": "2025-06-11T10:00:00Z",
+  "createdAt": "2025-06-11T04:29:26.074Z",
   "isActive": true
 }
 ```
-**默认密码：** `hello` （请首次登录后立即修改）
+**默认密码：** `hello123` （请首次登录后立即修改）
 
 ### 2. 初始化统计数据
 

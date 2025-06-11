@@ -400,7 +400,7 @@ export default function Home() {
               <div className="space-y-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    联系人及职务 <span className="text-red-500">*</span>
+                    联系人及职务
                   </label>
                   <input
                     placeholder="请输入联系人姓名及职务，如：张三 - 销售经理"
@@ -418,7 +418,7 @@ export default function Home() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      联系电话 <span className="text-red-500">*</span>
+                      联系电话
                     </label>
                     <input
                       type="tel"
@@ -436,7 +436,7 @@ export default function Home() {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      联系人邮箱 <span className="text-red-500">*</span>
+                      联系人邮箱
                     </label>
                     <input
                       type="email"

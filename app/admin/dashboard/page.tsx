@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { 
-  Users, 
-  FileText, 
-  Download, 
-  Eye, 
+import {
+  Users,
+  FileText,
+  Download,
+  Eye,
   Edit,
   Search,
   Filter,
@@ -19,6 +19,7 @@ import {
   XCircle,
   Clock
 } from 'lucide-react'
+import { buildApiUrl, API_ENDPOINTS } from '../../../lib/api-config'
 
 interface SupplierApplication {
   id: string
@@ -77,7 +78,10 @@ export default function AdminDashboard() {
 
   const loadApplications = async () => {
     try {
-      const response = await fetch('/api/admin/applications', {
+      // 使用 API 配置
+      const apiUrl = buildApiUrl(API_ENDPOINTS.APPLICATIONS);
+
+      const response = await fetch(apiUrl, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
         }
@@ -133,7 +137,10 @@ export default function AdminDashboard() {
 
   const updateApplicationStatus = async (id: string, newStatus: 'approved' | 'rejected') => {
     try {
-      const response = await fetch(`/api/admin/applications/${id}/status`, {
+      // 使用 API 配置
+      const apiUrl = buildApiUrl(API_ENDPOINTS.APPLICATION_STATUS(id));
+
+      const response = await fetch(apiUrl, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
