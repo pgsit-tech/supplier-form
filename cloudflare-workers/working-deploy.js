@@ -1,89 +1,36 @@
 /**
- * Cloudflare Workers - 供应商申请系统后端 API
- * 最终修复版本：解决CORS问题和环境变量配置
+ * Cloudflare Workers - 供应商申请系统
+ * 完全重写版本 - 确保所有功能正常工作
  * 
- * 环境变量绑定:
+ * 环境变量要求:
  * - SUPPLIER_APPLICATIONS: KV 命名空间
  * - ADMIN_USERS: KV 命名空间  
  * - ADMIN_SESSIONS: KV 命名空间
  * - SYSTEM_CONFIG: KV 命名空间
  * - JWT_SECRET: JWT 密钥
- * - FRONTEND_URL: 前端域名（用于 CORS）
+ * - FRONTEND_URL: 前端域名 (https://spcode.pgs-log.cn)
  */
 
-// ==================== 响应处理 ====================
+// ==================== 工具函数 ====================
 
-function createResponse(data, status = 200, headers = {}) {
+function createResponse(data, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
     headers: {
       'Content-Type': 'application/json',
-      ...headers
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Max-Age': '86400',
     }
   });
 }
-
-function handleCORS(origin, allowedOrigins) {
-  console.log('CORS Debug - Origin:', origin);
-  console.log('CORS Debug - AllowedOrigins:', allowedOrigins);
-  
-  // 支持多个前端域名的 CORS 预检
-  const origins = allowedOrigins ? allowedOrigins.split(',').map(url => url.trim()) : ['*'];
-  console.log('CORS Debug - Parsed Origins:', origins);
-
-  let allowOrigin = '*';
-  
-  // 如果没有配置FRONTEND_URL，默认允许所有来源
-  if (!allowedOrigins) {
-    allowOrigin = '*';
-  } else if (origin && origins.length > 0 && !origins.includes('*')) {
-    if (origins.includes(origin)) {
-      allowOrigin = origin;
-    } else {
-      // 检查是否有匹配的域名
-      const matchedOrigin = origins.find(allowedOrigin => {
-        if (allowedOrigin.startsWith('https://') && origin.startsWith('https://')) {
-          const allowedDomain = allowedOrigin.replace('https://', '');
-          const requestDomain = origin.replace('https://', '');
-          return requestDomain === allowedDomain || requestDomain.endsWith('.' + allowedDomain);
-        }
-        return false;
-      });
-      if (matchedOrigin) {
-        allowOrigin = origin;
-      }
-    }
-  } else if (origins.length === 1 && origins[0] !== '*') {
-    allowOrigin = origins[0];
-  }
-
-  console.log('CORS Debug - Final AllowOrigin:', allowOrigin);
-
-  const corsHeaders = {
-    'Access-Control-Allow-Origin': allowOrigin,
-    'Access-Control-Allow-Methods': 'GET, POST, PATCH, PUT, DELETE, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    'Access-Control-Max-Age': '86400',
-    'Access-Control-Allow-Credentials': 'true',
-  };
-
-  console.log('CORS Debug - Headers:', corsHeaders);
-
-  return new Response(null, {
-    status: 204,
-    headers: corsHeaders
-  });
-}
-
-// ==================== ID 生成 ====================
 
 function generateId(prefix = '') {
   const timestamp = Date.now().toString(36);
   const random = Math.random().toString(36).substring(2, 8);
-  return prefix ? `${prefix}_${timestamp}${random}` : `${timestamp}${random}`;
+  return prefix ? `${prefix}_${timestamp}_${random}` : `${timestamp}_${random}`;
 }
-
-// ==================== 密码处理 ====================
 
 async function hashPassword(password) {
   const encoder = new TextEncoder();
@@ -98,76 +45,25 @@ async function verifyPassword(password, hash) {
   return computedHash === hash;
 }
 
+function isValidEmail(email) {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+}
+
+function sanitizeString(str) {
+  if (typeof str !== 'string') return '';
+  return str.trim().replace(/[<>]/g, '');
+}
+
 // ==================== JWT 处理 ====================
 
-const JWT_HEADER = {
-  alg: 'HS256',
-  typ: 'JWT'
-};
-
 function base64UrlEncode(str) {
-  return btoa(str)
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=/g, '');
+  return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
 }
 
 function base64UrlDecode(str) {
   str += '='.repeat((4 - str.length % 4) % 4);
   return atob(str.replace(/-/g, '+').replace(/_/g, '/'));
-}
-
-async function generateJWT(payload, secret) {
-  try {
-    const now = Math.floor(Date.now() / 1000);
-    const jwtPayload = {
-      ...payload,
-      iat: now,
-      exp: now + (24 * 60 * 60),
-      iss: 'pgs-supplier-system'
-    };
-    
-    const encodedHeader = base64UrlEncode(JSON.stringify(JWT_HEADER));
-    const encodedPayload = base64UrlEncode(JSON.stringify(jwtPayload));
-    
-    const data = `${encodedHeader}.${encodedPayload}`;
-    const signature = await createHMACSignature(data, secret);
-    
-    return `${data}.${signature}`;
-  } catch (error) {
-    console.error('JWT 生成错误:', error);
-    return null;
-  }
-}
-
-async function verifyJWT(token, secret) {
-  try {
-    const parts = token.split('.');
-    if (parts.length !== 3) {
-      return null;
-    }
-    
-    const [encodedHeader, encodedPayload, signature] = parts;
-    
-    const data = `${encodedHeader}.${encodedPayload}`;
-    const expectedSignature = await createHMACSignature(data, secret);
-    
-    if (signature !== expectedSignature) {
-      return null;
-    }
-    
-    const payload = JSON.parse(base64UrlDecode(encodedPayload));
-    
-    const now = Math.floor(Date.now() / 1000);
-    if (payload.exp && payload.exp < now) {
-      return null;
-    }
-    
-    return payload;
-  } catch (error) {
-    console.error('JWT 验证错误:', error);
-    return null;
-  }
 }
 
 async function createHMACSignature(data, secret) {
@@ -176,11 +72,7 @@ async function createHMACSignature(data, secret) {
   const messageData = encoder.encode(data);
   
   const cryptoKey = await crypto.subtle.importKey(
-    'raw',
-    keyData,
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign']
+    'raw', keyData, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
   );
   
   const signature = await crypto.subtle.sign('HMAC', cryptoKey, messageData);
@@ -188,434 +80,208 @@ async function createHMACSignature(data, secret) {
   return base64UrlEncode(String.fromCharCode(...signatureArray));
 }
 
-// ==================== 数据验证 ====================
-
-function isValidEmail(email) {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
+async function generateJWT(payload, secret) {
+  try {
+    const header = { alg: 'HS256', typ: 'JWT' };
+    const now = Math.floor(Date.now() / 1000);
+    const jwtPayload = {
+      ...payload,
+      iat: now,
+      exp: now + (24 * 60 * 60),
+      iss: 'pgs-supplier-system'
+    };
+    
+    const encodedHeader = base64UrlEncode(JSON.stringify(header));
+    const encodedPayload = base64UrlEncode(JSON.stringify(jwtPayload));
+    const data = `${encodedHeader}.${encodedPayload}`;
+    const signature = await createHMACSignature(data, secret);
+    
+    return `${data}.${signature}`;
+  } catch (error) {
+    console.error('JWT生成错误:', error);
+    return null;
+  }
 }
 
-function isValidPhone(phone) {
-  const phoneRegex = /^[\d\s\-\+\(\)]+$/;
-  return phoneRegex.test(phone) && phone.replace(/\D/g, '').length >= 10;
+async function verifyJWT(token, secret) {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    
+    const [encodedHeader, encodedPayload, signature] = parts;
+    const data = `${encodedHeader}.${encodedPayload}`;
+    const expectedSignature = await createHMACSignature(data, secret);
+    
+    if (signature !== expectedSignature) return null;
+    
+    const payload = JSON.parse(base64UrlDecode(encodedPayload));
+    const now = Math.floor(Date.now() / 1000);
+    if (payload.exp && payload.exp < now) return null;
+    
+    return payload;
+  } catch (error) {
+    console.error('JWT验证错误:', error);
+    return null;
+  }
 }
 
-function sanitizeString(str) {
-  if (typeof str !== 'string') return '';
-  return str.trim().replace(/[<>]/g, '');
-}
-
-function createValidationResult(success, data = null, errors = []) {
-  return { success, data, errors };
-}
-
-function createError(field, message) {
-  return { field, message };
-}
-
-// ==================== 供应商表单验证 ====================
+// ==================== 验证函数 ====================
 
 function validateSupplierForm(data) {
   const errors = [];
   const validatedData = {};
   
   // 申请人邮箱
-  if (!data.applicantEmail || typeof data.applicantEmail !== 'string') {
-    errors.push(createError('applicantEmail', '申请人邮箱是必填项'));
-  } else if (!isValidEmail(data.applicantEmail)) {
-    errors.push(createError('applicantEmail', '请输入有效的邮箱地址'));
+  if (!data.applicantEmail || !isValidEmail(data.applicantEmail)) {
+    errors.push({ field: 'applicantEmail', message: '请输入有效的申请人邮箱' });
   } else {
     validatedData.applicantEmail = sanitizeString(data.applicantEmail);
   }
   
   // 申请人分支
-  if (!data.applicantBranch || typeof data.applicantBranch !== 'string') {
-    errors.push(createError('applicantBranch', '申请人分支是必填项'));
+  const validBranches = ['SHA', 'BJS', 'CAN', 'SZX', 'NGB', 'XMN', 'QD', 'TJ'];
+  if (!data.applicantBranch || !validBranches.includes(data.applicantBranch)) {
+    errors.push({ field: 'applicantBranch', message: '请选择有效的申请人分支' });
   } else {
-    const validBranches = ['SHA', 'BJS', 'CAN', 'SZX', 'NGB', 'XMN', 'QD', 'TJ'];
-    if (!validBranches.includes(data.applicantBranch)) {
-      errors.push(createError('applicantBranch', '请选择有效的分支'));
-    } else {
-      validatedData.applicantBranch = data.applicantBranch;
-    }
+    validatedData.applicantBranch = data.applicantBranch;
   }
   
   // 供应商名称
-  if (!data.supplierName || typeof data.supplierName !== 'string') {
-    errors.push(createError('supplierName', '供应商名称是必填项'));
-  } else if (data.supplierName.trim().length < 2) {
-    errors.push(createError('supplierName', '供应商名称至少需要2个字符'));
+  if (!data.supplierName || data.supplierName.trim().length < 2) {
+    errors.push({ field: 'supplierName', message: '供应商名称至少需要2个字符' });
   } else {
     validatedData.supplierName = sanitizeString(data.supplierName);
   }
   
   // 供应商地址
-  if (!data.supplierAddress || typeof data.supplierAddress !== 'string') {
-    errors.push(createError('supplierAddress', '供应商地址是必填项'));
-  } else if (data.supplierAddress.trim().length < 5) {
-    errors.push(createError('supplierAddress', '供应商地址至少需要5个字符'));
+  if (!data.supplierAddress || data.supplierAddress.trim().length < 5) {
+    errors.push({ field: 'supplierAddress', message: '供应商地址至少需要5个字符' });
   } else {
     validatedData.supplierAddress = sanitizeString(data.supplierAddress);
   }
   
   // 联系人及职务（可选）
-  if (data.contactPersonAndTitle && typeof data.contactPersonAndTitle === 'string') {
-    if (data.contactPersonAndTitle.trim().length < 2) {
-      errors.push(createError('contactPersonAndTitle', '联系人及职务至少需要2个字符'));
-    } else {
-      validatedData.contactPersonAndTitle = sanitizeString(data.contactPersonAndTitle);
-    }
-  } else {
-    validatedData.contactPersonAndTitle = '';
-  }
-
+  validatedData.contactPersonAndTitle = data.contactPersonAndTitle ? sanitizeString(data.contactPersonAndTitle) : '';
+  
   // 联系电话（可选）
-  if (data.contactPhone && typeof data.contactPhone === 'string') {
-    if (!isValidPhone(data.contactPhone)) {
-      errors.push(createError('contactPhone', '请输入有效的电话号码'));
-    } else {
-      validatedData.contactPhone = sanitizeString(data.contactPhone);
-    }
-  } else {
-    validatedData.contactPhone = '';
-  }
-
+  validatedData.contactPhone = data.contactPhone ? sanitizeString(data.contactPhone) : '';
+  
   // 联系邮箱（可选）
-  if (data.contactEmail && typeof data.contactEmail === 'string') {
-    if (data.contactEmail.trim() !== '' && !isValidEmail(data.contactEmail)) {
-      errors.push(createError('contactEmail', '请输入有效的邮箱地址'));
-    } else {
-      validatedData.contactEmail = sanitizeString(data.contactEmail);
-    }
+  if (data.contactEmail && data.contactEmail.trim() && !isValidEmail(data.contactEmail)) {
+    errors.push({ field: 'contactEmail', message: '请输入有效的联系邮箱' });
   } else {
-    validatedData.contactEmail = '';
+    validatedData.contactEmail = data.contactEmail ? sanitizeString(data.contactEmail) : '';
   }
   
   // 是否签署协议
-  if (!data.agreementSigned || typeof data.agreementSigned !== 'string') {
-    errors.push(createError('agreementSigned', '请选择是否签署协议'));
+  if (!data.agreementSigned || !['yes', 'no'].includes(data.agreementSigned)) {
+    errors.push({ field: 'agreementSigned', message: '请选择是否签署协议' });
   } else {
-    const validValues = ['yes', 'no'];
-    if (!validValues.includes(data.agreementSigned)) {
-      errors.push(createError('agreementSigned', '请选择有效的协议签署状态'));
-    } else {
-      validatedData.agreementSigned = data.agreementSigned;
-    }
+    validatedData.agreementSigned = data.agreementSigned;
   }
   
   // 主营业务
+  const validBusiness = ['agent', 'booking', 'warehouse', 'transport', 'customs', 'other'];
   if (!Array.isArray(data.mainBusiness) || data.mainBusiness.length === 0) {
-    errors.push(createError('mainBusiness', '请至少选择一项主营业务'));
+    errors.push({ field: 'mainBusiness', message: '请至少选择一项主营业务' });
+  } else if (data.mainBusiness.some(b => !validBusiness.includes(b))) {
+    errors.push({ field: 'mainBusiness', message: '包含无效的主营业务选项' });
   } else {
-    const validBusiness = ['agent', 'booking', 'warehouse', 'transport', 'customs', 'other'];
-    const invalidBusiness = data.mainBusiness.filter(b => !validBusiness.includes(b));
-    if (invalidBusiness.length > 0) {
-      errors.push(createError('mainBusiness', '包含无效的主营业务选项'));
-    } else {
-      validatedData.mainBusiness = data.mainBusiness;
-    }
+    validatedData.mainBusiness = data.mainBusiness;
   }
   
   // 使用原因
-  if (!data.usageReason || typeof data.usageReason !== 'string') {
-    errors.push(createError('usageReason', '使用原因是必填项'));
-  } else if (data.usageReason.trim().length < 10) {
-    errors.push(createError('usageReason', '使用原因至少需要10个字符'));
+  if (!data.usageReason || data.usageReason.trim().length < 10) {
+    errors.push({ field: 'usageReason', message: '使用原因至少需要10个字符' });
   } else {
     validatedData.usageReason = sanitizeString(data.usageReason);
   }
   
   // 供应商来源
-  if (!data.supplierSource || typeof data.supplierSource !== 'string') {
-    errors.push(createError('supplierSource', '供应商来源是必填项'));
-  } else if (data.supplierSource.trim().length < 5) {
-    errors.push(createError('supplierSource', '供应商来源至少需要5个字符'));
+  if (!data.supplierSource || data.supplierSource.trim().length < 5) {
+    errors.push({ field: 'supplierSource', message: '供应商来源至少需要5个字符' });
   } else {
     validatedData.supplierSource = sanitizeString(data.supplierSource);
   }
   
   // FM3000代码（可选）
-  if (data.fm3000Code && typeof data.fm3000Code === 'string') {
-    validatedData.fm3000Code = sanitizeString(data.fm3000Code);
-  }
+  validatedData.fm3000Code = data.fm3000Code ? sanitizeString(data.fm3000Code) : '';
   
-  if (errors.length > 0) {
-    return createValidationResult(false, null, errors);
-  }
-  
-  return createValidationResult(true, validatedData);
+  return {
+    success: errors.length === 0,
+    data: validatedData,
+    errors
+  };
 }
-
-// ==================== 其他验证函数 ====================
 
 function validateLogin(data) {
   const errors = [];
   const validatedData = {};
 
-  if (!data.username || typeof data.username !== 'string') {
-    errors.push(createError('username', '用户名是必填项'));
-  } else if (data.username.trim().length < 3) {
-    errors.push(createError('username', '用户名至少需要3个字符'));
+  if (!data.username || data.username.trim().length < 3) {
+    errors.push({ field: 'username', message: '用户名至少需要3个字符' });
   } else {
     validatedData.username = sanitizeString(data.username);
   }
 
-  if (!data.password || typeof data.password !== 'string') {
-    errors.push(createError('password', '密码是必填项'));
-  } else if (data.password.length < 6) {
-    errors.push(createError('password', '密码至少需要6个字符'));
+  if (!data.password || data.password.length < 6) {
+    errors.push({ field: 'password', message: '密码至少需要6个字符' });
   } else {
     validatedData.password = data.password;
   }
 
-  if (errors.length > 0) {
-    return createValidationResult(false, null, errors);
-  }
-
-  return createValidationResult(true, validatedData);
-}
-
-function validateStatusUpdate(data) {
-  const errors = [];
-  const validatedData = {};
-
-  if (!data.status || typeof data.status !== 'string') {
-    errors.push(createError('status', '状态是必填项'));
-  } else {
-    const validStatuses = ['pending', 'approved', 'rejected'];
-    if (!validStatuses.includes(data.status)) {
-      errors.push(createError('status', '请选择有效的状态'));
-    } else {
-      validatedData.status = data.status;
-    }
-  }
-
-  if (data.note && typeof data.note === 'string') {
-    validatedData.note = sanitizeString(data.note);
-  }
-
-  if (errors.length > 0) {
-    return createValidationResult(false, null, errors);
-  }
-
-  return createValidationResult(true, validatedData);
+  return {
+    success: errors.length === 0,
+    data: validatedData,
+    errors
+  };
 }
 
 function validateSystemConfig(data) {
   const errors = [];
   const validatedData = {};
-
-  if (!data.title || typeof data.title !== 'string') {
-    errors.push(createError('title', '系统标题是必填项'));
-  } else if (data.title.trim().length < 2) {
-    errors.push(createError('title', '系统标题至少需要2个字符'));
-  } else if (data.title.trim().length > 50) {
-    errors.push(createError('title', '系统标题不能超过50个字符'));
+  
+  if (!data.title || data.title.trim().length < 2 || data.title.trim().length > 50) {
+    errors.push({ field: 'title', message: '系统标题长度应在2-50个字符之间' });
   } else {
     validatedData.title = sanitizeString(data.title);
   }
-
-  if (!data.subtitle || typeof data.subtitle !== 'string') {
-    errors.push(createError('subtitle', '系统副标题是必填项'));
-  } else if (data.subtitle.trim().length < 2) {
-    errors.push(createError('subtitle', '系统副标题至少需要2个字符'));
-  } else if (data.subtitle.trim().length > 30) {
-    errors.push(createError('subtitle', '系统副标题不能超过30个字符'));
+  
+  if (!data.subtitle || data.subtitle.trim().length < 2 || data.subtitle.trim().length > 30) {
+    errors.push({ field: 'subtitle', message: '系统副标题长度应在2-30个字符之间' });
   } else {
     validatedData.subtitle = sanitizeString(data.subtitle);
   }
-
-  if (!data.description || typeof data.description !== 'string') {
-    errors.push(createError('description', '系统描述是必填项'));
-  } else if (data.description.trim().length < 10) {
-    errors.push(createError('description', '系统描述至少需要10个字符'));
-  } else if (data.description.trim().length > 200) {
-    errors.push(createError('description', '系统描述不能超过200个字符'));
+  
+  if (!data.description || data.description.trim().length < 10 || data.description.trim().length > 200) {
+    errors.push({ field: 'description', message: '系统描述长度应在10-200个字符之间' });
   } else {
     validatedData.description = sanitizeString(data.description);
   }
-
-  if (errors.length > 0) {
-    return createValidationResult(false, null, errors);
-  }
-
-  return createValidationResult(true, validatedData);
-}
-
-// ==================== 路由配置 ====================
-
-const routes = {
-  'POST /api/submit-form': handleSubmitForm,
-  'POST /api/admin/login': handleAdminLogin,
-  'GET /api/admin/system-config': handleGetSystemConfig,
-  'PUT /api/admin/system-config': handleUpdateSystemConfig,
-  'GET /api/admin/applications': handleGetApplications,
-  'PATCH /api/admin/applications/:id/status': handleUpdateApplicationStatus,
-  'GET /api/health': handleHealth,
-};
-
-function matchRoute(routePath, actualPath) {
-  const routeParts = routePath.split('/');
-  const actualParts = actualPath.split('/');
-
-  if (routeParts.length !== actualParts.length) {
-    return false;
-  }
-
-  for (let i = 0; i < routeParts.length; i++) {
-    if (routeParts[i].startsWith(':')) {
-      continue;
-    }
-    if (routeParts[i] !== actualParts[i]) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-function addCORSHeaders(response, frontendUrl, requestOrigin) {
-  console.log('addCORSHeaders - FrontendUrl:', frontendUrl);
-  console.log('addCORSHeaders - RequestOrigin:', requestOrigin);
-
-  const allowedOrigins = frontendUrl ? frontendUrl.split(',').map(url => url.trim()) : ['*'];
-
-  let allowOrigin = '*';
-  if (!frontendUrl) {
-    allowOrigin = '*';
-  } else if (requestOrigin && allowedOrigins.length > 0 && !allowedOrigins.includes('*')) {
-    if (allowedOrigins.includes(requestOrigin)) {
-      allowOrigin = requestOrigin;
-    } else {
-      const matchedOrigin = allowedOrigins.find(origin => {
-        if (origin.startsWith('https://') && requestOrigin.startsWith('https://')) {
-          const originDomain = origin.replace('https://', '');
-          const requestDomain = requestOrigin.replace('https://', '');
-          return requestDomain === originDomain || requestDomain.endsWith('.' + originDomain);
-        }
-        return false;
-      });
-      if (matchedOrigin) {
-        allowOrigin = requestOrigin;
-      }
-    }
-  } else if (allowedOrigins.length === 1 && allowedOrigins[0] !== '*') {
-    allowOrigin = allowedOrigins[0];
-  }
-
-  const corsHeaders = {
-    'Access-Control-Allow-Origin': allowOrigin,
-    'Access-Control-Allow-Methods': 'GET, POST, PATCH, PUT, DELETE, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    'Access-Control-Max-Age': '86400',
-    'Access-Control-Allow-Credentials': 'true',
+  
+  return {
+    success: errors.length === 0,
+    data: validatedData,
+    errors
   };
-
-  console.log('addCORSHeaders - Final Headers:', corsHeaders);
-
-  const newResponse = new Response(response.body, {
-    status: response.status,
-    statusText: response.statusText,
-    headers: {
-      ...Object.fromEntries(response.headers),
-      ...corsHeaders
-    }
-  });
-
-  return newResponse;
 }
 
-// ==================== 主处理函数 ====================
-
-export default {
-  async fetch(request, env, ctx) {
-    try {
-      console.log('Worker Request:', request.method, request.url);
-      console.log('Environment Variables:', {
-        FRONTEND_URL: env.FRONTEND_URL,
-        hasSupplierApplications: !!env.SUPPLIER_APPLICATIONS,
-        hasAdminUsers: !!env.ADMIN_USERS,
-        hasAdminSessions: !!env.ADMIN_SESSIONS,
-        hasSystemConfig: !!env.SYSTEM_CONFIG,
-        hasJwtSecret: !!env.JWT_SECRET
-      });
-
-      // 处理 CORS 预检请求
-      if (request.method === 'OPTIONS') {
-        const origin = request.headers.get('Origin');
-        console.log('OPTIONS Request - Origin:', origin);
-        return handleCORS(origin, env.FRONTEND_URL);
-      }
-
-      const url = new URL(request.url);
-      const method = request.method;
-      const path = url.pathname;
-
-      console.log('Route Matching:', method, path);
-
-      // 路由匹配
-      const routeKey = `${method} ${path}`;
-      let handler = routes[routeKey];
-
-      // 处理动态路由
-      if (!handler) {
-        for (const [route, routeHandler] of Object.entries(routes)) {
-          const [routeMethod, routePath] = route.split(' ');
-          if (routeMethod === method && matchRoute(routePath, path)) {
-            handler = routeHandler;
-            console.log('Matched Dynamic Route:', route);
-            break;
-          }
-        }
-      } else {
-        console.log('Matched Static Route:', routeKey);
-      }
-
-      if (!handler) {
-        console.log('No Route Handler Found');
-        return createResponse({
-          success: false,
-          message: 'API 端点不存在'
-        }, 404);
-      }
-
-      // 执行处理器
-      const response = await handler(request, env, ctx);
-
-      // 添加 CORS 头
-      const requestOrigin = request.headers.get('Origin');
-      return addCORSHeaders(response, env.FRONTEND_URL, requestOrigin);
-
-    } catch (error) {
-      console.error('Worker 错误:', error);
-      return createResponse({
-        success: false,
-        message: '服务器内部错误'
-      }, 500);
-    }
-  }
-};
-
-// ==================== API 处理器函数 ====================
+// ==================== API 处理函数 ====================
 
 async function handleHealth(request, env) {
   return createResponse({
     success: true,
     message: '服务正常运行',
     timestamp: new Date().toISOString(),
-    version: '1.0.0',
-    environment: {
-      hasFrontendUrl: !!env.FRONTEND_URL,
-      frontendUrl: env.FRONTEND_URL
-    }
+    version: '2.0.0'
   });
 }
 
 async function handleSubmitForm(request, env) {
   try {
     const body = await request.json();
-
     const validation = validateSupplierForm(body);
+
     if (!validation.success) {
       return createResponse({
         success: false,
@@ -635,11 +301,13 @@ async function handleSubmitForm(request, env) {
       updatedAt: now
     };
 
+    // 保存到 KV
     await env.SUPPLIER_APPLICATIONS.put(
       `application:${applicationId}`,
       JSON.stringify(applicationData)
     );
 
+    // 更新索引
     await updateApplicationIndexes(env, applicationData, 'create');
 
     return createResponse({
@@ -663,8 +331,8 @@ async function handleSubmitForm(request, env) {
 async function handleAdminLogin(request, env) {
   try {
     const body = await request.json();
-
     const validation = validateLogin(body);
+
     if (!validation.success) {
       return createResponse({
         success: false,
@@ -675,6 +343,7 @@ async function handleAdminLogin(request, env) {
 
     const { username, password } = validation.data;
 
+    // 从 KV 获取用户信息
     const userKey = `user:${username}`;
     const userData = await env.ADMIN_USERS.get(userKey);
 
@@ -687,6 +356,7 @@ async function handleAdminLogin(request, env) {
 
     const user = JSON.parse(userData);
 
+    // 验证密码
     const isValidPassword = await verifyPassword(password, user.passwordHash);
     if (!isValidPassword) {
       return createResponse({
@@ -695,6 +365,7 @@ async function handleAdminLogin(request, env) {
       }, 401);
     }
 
+    // 检查用户状态
     if (!user.isActive) {
       return createResponse({
         success: false,
@@ -702,6 +373,7 @@ async function handleAdminLogin(request, env) {
       }, 401);
     }
 
+    // 生成会话
     const sessionId = generateId('sess');
     const now = new Date().toISOString();
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
@@ -718,15 +390,18 @@ async function handleAdminLogin(request, env) {
       userAgent: request.headers.get('User-Agent') || 'unknown'
     };
 
+    // 保存会话到 KV
     await env.ADMIN_SESSIONS.put(
       `session:${sessionId}`,
       JSON.stringify(sessionData),
       { expirationTtl: 24 * 60 * 60 }
     );
 
+    // 更新用户最后登录时间
     user.lastLoginAt = now;
     await env.ADMIN_USERS.put(userKey, JSON.stringify(user));
 
+    // 生成 JWT token
     const token = await generateJWT({
       sessionId,
       userId: user.id,
@@ -734,6 +409,7 @@ async function handleAdminLogin(request, env) {
       role: user.role
     }, env.JWT_SECRET);
 
+    // 返回用户信息（不包含密码）
     const { passwordHash, ...userInfo } = user;
 
     return createResponse({
@@ -760,23 +436,23 @@ async function verifyAdminAuth(request, env) {
     }
 
     const token = authHeader.substring(7);
-
     const payload = await verifyJWT(token, env.JWT_SECRET);
     if (!payload) {
       return { success: false, message: '无效的认证令牌' };
     }
 
+    // 验证会话
     const sessionData = await env.ADMIN_SESSIONS.get(`session:${payload.sessionId}`);
     if (!sessionData) {
       return { success: false, message: '会话已过期' };
     }
 
     const session = JSON.parse(sessionData);
-
     if (new Date(session.expiresAt) < new Date()) {
       return { success: false, message: '会话已过期' };
     }
 
+    // 更新最后访问时间
     session.lastAccessAt = new Date().toISOString();
     await env.ADMIN_SESSIONS.put(
       `session:${payload.sessionId}`,
@@ -809,6 +485,7 @@ async function handleGetSystemConfig(request, env) {
       }, 401);
     }
 
+    // 获取系统配置
     const configData = await env.SYSTEM_CONFIG.get('system_config');
 
     let config = {
@@ -847,8 +524,8 @@ async function handleUpdateSystemConfig(request, env) {
     }
 
     const body = await request.json();
-
     const validation = validateSystemConfig(body);
+
     if (!validation.success) {
       return createResponse({
         success: false,
@@ -863,6 +540,7 @@ async function handleUpdateSystemConfig(request, env) {
       updatedBy: authResult.user.username
     };
 
+    // 保存配置
     await env.SYSTEM_CONFIG.put('system_config', JSON.stringify(config));
 
     return createResponse({
@@ -896,6 +574,7 @@ async function handleGetApplications(request, env) {
     const page = parseInt(url.searchParams.get('page') || '1');
     const limit = parseInt(url.searchParams.get('limit') || '20');
 
+    // 获取申请列表
     let applicationIds = [];
 
     if (status && status !== 'all') {
@@ -906,12 +585,14 @@ async function handleGetApplications(request, env) {
       applicationIds = allIds ? JSON.parse(allIds) : [];
     }
 
+    // 批量获取申请数据
     const applications = [];
     for (const id of applicationIds) {
       const appData = await env.SUPPLIER_APPLICATIONS.get(`application:${id}`);
       if (appData) {
         const app = JSON.parse(appData);
 
+        // 搜索过滤
         if (search) {
           const searchLower = search.toLowerCase();
           const matchesSearch =
@@ -928,12 +609,15 @@ async function handleGetApplications(request, env) {
       }
     }
 
+    // 按提交时间倒序排列
     applications.sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime());
 
+    // 分页
     const startIndex = (page - 1) * limit;
     const endIndex = startIndex + limit;
     const paginatedApplications = applications.slice(startIndex, endIndex);
 
+    // 获取统计信息
     const statsData = await env.SUPPLIER_APPLICATIONS.get('applications:stats');
     const stats = statsData ? JSON.parse(statsData) : {
       total: 0,
@@ -973,21 +657,22 @@ async function handleUpdateApplicationStatus(request, env) {
       }, 401);
     }
 
+    // 提取路由参数
     const url = new URL(request.url);
     const pathParts = url.pathname.split('/');
-    const applicationId = pathParts[4];
+    const applicationId = pathParts[4]; // /api/admin/applications/:id/status
 
     const body = await request.json();
 
-    const validation = validateStatusUpdate(body);
-    if (!validation.success) {
+    // 验证状态更新数据
+    if (!body.status || !['pending', 'approved', 'rejected'].includes(body.status)) {
       return createResponse({
         success: false,
-        message: '请求数据格式错误',
-        errors: validation.errors
+        message: '请选择有效的状态'
       }, 400);
     }
 
+    // 获取申请数据
     const appData = await env.SUPPLIER_APPLICATIONS.get(`application:${applicationId}`);
     if (!appData) {
       return createResponse({
@@ -998,17 +683,23 @@ async function handleUpdateApplicationStatus(request, env) {
 
     const application = JSON.parse(appData);
     const oldStatus = application.status;
-    const newStatus = validation.data.status;
+    const newStatus = body.status;
 
+    // 更新申请状态
     application.status = newStatus;
     application.updatedAt = new Date().toISOString();
     application.updatedBy = authResult.user.username;
+    if (body.note) {
+      application.note = sanitizeString(body.note);
+    }
 
+    // 保存更新后的数据
     await env.SUPPLIER_APPLICATIONS.put(
       `application:${applicationId}`,
       JSON.stringify(application)
     );
 
+    // 更新索引
     await updateApplicationIndexes(env, application, 'update', oldStatus);
 
     return createResponse({
@@ -1035,6 +726,7 @@ async function handleUpdateApplicationStatus(request, env) {
 
 async function updateApplicationIndexes(env, application, operation, oldStatus = null) {
   try {
+    // 更新总列表
     const listKey = 'applications:list';
     let allIds = await env.SUPPLIER_APPLICATIONS.get(listKey);
     allIds = allIds ? JSON.parse(allIds) : [];
@@ -1045,6 +737,7 @@ async function updateApplicationIndexes(env, application, operation, oldStatus =
 
     await env.SUPPLIER_APPLICATIONS.put(listKey, JSON.stringify(allIds));
 
+    // 更新状态索引
     const statusKey = `applications:by_status:${application.status}`;
     let statusIds = await env.SUPPLIER_APPLICATIONS.get(statusKey);
     statusIds = statusIds ? JSON.parse(statusIds) : [];
@@ -1052,6 +745,7 @@ async function updateApplicationIndexes(env, application, operation, oldStatus =
     if (operation === 'create') {
       statusIds.unshift(application.id);
     } else if (operation === 'update' && oldStatus !== application.status) {
+      // 从旧状态列表中移除
       if (oldStatus) {
         const oldStatusKey = `applications:by_status:${oldStatus}`;
         let oldStatusIds = await env.SUPPLIER_APPLICATIONS.get(oldStatusKey);
@@ -1060,6 +754,7 @@ async function updateApplicationIndexes(env, application, operation, oldStatus =
         await env.SUPPLIER_APPLICATIONS.put(oldStatusKey, JSON.stringify(oldStatusIds));
       }
 
+      // 添加到新状态列表
       if (!statusIds.includes(application.id)) {
         statusIds.unshift(application.id);
       }
@@ -1067,6 +762,7 @@ async function updateApplicationIndexes(env, application, operation, oldStatus =
 
     await env.SUPPLIER_APPLICATIONS.put(statusKey, JSON.stringify(statusIds));
 
+    // 更新统计信息
     await updateApplicationStats(env);
 
   } catch (error) {
@@ -1086,6 +782,7 @@ async function updateApplicationStats(env) {
       rejected: 0
     };
 
+    // 统计各状态数量
     for (const status of ['pending', 'approved', 'rejected']) {
       const statusIds = await env.SUPPLIER_APPLICATIONS.get(`applications:by_status:${status}`);
       const ids = statusIds ? JSON.parse(statusIds) : [];
@@ -1098,3 +795,91 @@ async function updateApplicationStats(env) {
     console.error('更新统计信息错误:', error);
   }
 }
+
+// ==================== 路由配置和主处理函数 ====================
+
+const routes = {
+  'GET /api/health': handleHealth,
+  'POST /api/submit-form': handleSubmitForm,
+  'POST /api/admin/login': handleAdminLogin,
+  'GET /api/admin/system-config': handleGetSystemConfig,
+  'PUT /api/admin/system-config': handleUpdateSystemConfig,
+  'GET /api/admin/applications': handleGetApplications,
+  'PATCH /api/admin/applications/:id/status': handleUpdateApplicationStatus,
+};
+
+function matchRoute(routePath, actualPath) {
+  const routeParts = routePath.split('/');
+  const actualParts = actualPath.split('/');
+
+  if (routeParts.length !== actualParts.length) {
+    return false;
+  }
+
+  for (let i = 0; i < routeParts.length; i++) {
+    if (routeParts[i].startsWith(':')) {
+      continue; // 动态参数，跳过
+    }
+    if (routeParts[i] !== actualParts[i]) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+export default {
+  async fetch(request, env, ctx) {
+    try {
+      // 处理 CORS 预检请求
+      if (request.method === 'OPTIONS') {
+        return new Response(null, {
+          status: 204,
+          headers: {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+            'Access-Control-Max-Age': '86400',
+          }
+        });
+      }
+
+      const url = new URL(request.url);
+      const method = request.method;
+      const path = url.pathname;
+
+      // 路由匹配
+      const routeKey = `${method} ${path}`;
+      let handler = routes[routeKey];
+
+      // 处理动态路由
+      if (!handler) {
+        for (const [route, routeHandler] of Object.entries(routes)) {
+          const [routeMethod, routePath] = route.split(' ');
+          if (routeMethod === method && matchRoute(routePath, path)) {
+            handler = routeHandler;
+            break;
+          }
+        }
+      }
+
+      if (!handler) {
+        return createResponse({
+          success: false,
+          message: 'API 端点不存在'
+        }, 404);
+      }
+
+      // 执行处理器
+      const response = await handler(request, env, ctx);
+      return response;
+
+    } catch (error) {
+      console.error('Worker 错误:', error);
+      return createResponse({
+        success: false,
+        message: '服务器内部错误'
+      }, 500);
+    }
+  }
+};
