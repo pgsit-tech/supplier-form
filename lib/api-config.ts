@@ -31,6 +31,9 @@ export const API_ENDPOINTS = {
   ADMIN_LOGOUT: '/api/admin/logout',
   ADMIN_CHANGE_PASSWORD: '/api/admin/change-password',
 
+  // 系统配置
+  SYSTEM_CONFIG: '/api/admin/system-config',
+
   // 申请管理
   APPLICATIONS: '/api/admin/applications',
   APPLICATION_STATUS: (id: string) => `/api/admin/applications/${id}/status`,

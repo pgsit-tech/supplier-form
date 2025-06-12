@@ -20,6 +20,7 @@ import {
   agreementOptions,
 } from '../lib/validations'
 import { buildApiUrl, API_ENDPOINTS } from '../lib/api-config'
+import DynamicTitle, { DynamicPageTitle } from '../components/DynamicTitle'
 
 export default function Home() {
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -107,15 +108,18 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
+      <DynamicPageTitle />
       <div className="max-w-4xl mx-auto p-6">
         {/* 页面头部 */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-3">
-            供应商系统CODE申请备案表
-          </h1>
-          <p className="text-xl text-gray-600">
-            PGS 內部表格
-          </p>
+          <DynamicTitle
+            className="mb-4"
+            showSubtitle={true}
+            showDescription={true}
+            fallbackTitle="供应商系统CODE申请备案表"
+            fallbackSubtitle="PGS 內部表格"
+            fallbackDescription="请填写完整的供应商信息以完成申请"
+          />
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">

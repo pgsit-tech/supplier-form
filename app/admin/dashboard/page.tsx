@@ -12,6 +12,7 @@ import {
   Filter,
   LogOut,
   Lock,
+  Settings,
   Calendar,
   Building2,
   Mail,
@@ -254,6 +255,13 @@ export default function AdminDashboard() {
               <span className="text-sm text-gray-700">
                 欢迎，{user?.name}
               </span>
+              <button
+                onClick={() => router.push('/admin/settings')}
+                className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+              >
+                <Settings size={16} className="mr-1" />
+                系统设置
+              </button>
               <button
                 onClick={() => router.push('/admin/change-password')}
                 className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
