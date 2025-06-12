@@ -14,7 +14,6 @@ import {
   Calendar,
   Building2,
   Mail,
-  Phone,
   CheckCircle,
   XCircle,
   Clock
@@ -353,8 +352,11 @@ export default function AdminDashboard() {
         {/* 搜索和过滤 */}
         <div className="bg-white shadow rounded-lg mb-6">
           <div className="px-4 py-5 sm:p-6">
-            <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex flex-col sm:flex-row gap-4 items-end">
               <div className="flex-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  搜索条件
+                </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <Search className="h-5 w-5 text-gray-400" />
@@ -364,24 +366,29 @@ export default function AdminDashboard() {
                     placeholder="搜索供应商名称、申请人邮箱或联系人..."
                     value={searchTerm}
                     onChange={(e) => handleSearch(e.target.value)}
-                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                    className="block w-full h-10 pl-10 pr-3 border border-gray-300 rounded-md bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
                   />
                 </div>
               </div>
-              <div className="flex gap-2">
-                <select
-                  value={statusFilter}
-                  onChange={(e) => handleStatusFilter(e.target.value)}
-                  className="block w-full pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
-                >
-                  <option value="all">所有状态</option>
-                  <option value="pending">待审核</option>
-                  <option value="approved">已批准</option>
-                  <option value="rejected">已拒绝</option>
-                </select>
+              <div className="flex gap-3 items-end">
+                <div className="min-w-[120px]">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    状态筛选
+                  </label>
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => handleStatusFilter(e.target.value)}
+                    className="block w-full h-10 pl-3 pr-8 border border-gray-300 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 text-sm rounded-md bg-white"
+                  >
+                    <option value="all">所有状态</option>
+                    <option value="pending">待审核</option>
+                    <option value="approved">已批准</option>
+                    <option value="rejected">已拒绝</option>
+                  </select>
+                </div>
                 <button
                   onClick={exportToCSV}
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                  className="inline-flex items-center justify-center h-10 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 whitespace-nowrap"
                 >
                   <Download size={16} className="mr-2" />
                   导出CSV
@@ -391,78 +398,101 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* 申请列表 */}
-        <div className="bg-white shadow overflow-hidden sm:rounded-md">
-          <ul className="divide-y divide-gray-200">
-            {filteredApplications.length === 0 ? (
-              <li className="px-6 py-8 text-center text-gray-500">
-                暂无申请数据
-              </li>
-            ) : (
-              filteredApplications.map((application) => (
-                <li key={application.id}>
-                  <div className="px-4 py-4 sm:px-6 hover:bg-gray-50">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between">
-                          <p className="text-sm font-medium text-indigo-600 truncate">
+        {/* 申请列表 - 三列表格布局 */}
+        <div className="bg-white shadow overflow-hidden sm:rounded-lg">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    基本信息
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    审批状态
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    操作
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filteredApplications.length === 0 ? (
+                  <tr>
+                    <td colSpan={3} className="px-6 py-8 text-center text-gray-500">
+                      暂无申请数据
+                    </td>
+                  </tr>
+                ) : (
+                  filteredApplications.map((application) => (
+                    <tr key={application.id} className="hover:bg-gray-50">
+                      {/* 第一列：基本信息 */}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex flex-col">
+                          <div className="text-sm font-medium text-gray-900 mb-1">
                             {application.supplierName}
-                          </p>
+                          </div>
+                          <div className="text-sm text-gray-500 space-y-1">
+                            <div className="flex items-center">
+                              <Mail className="flex-shrink-0 mr-1.5 h-4 w-4 text-gray-400" />
+                              <span className="truncate">{application.applicantEmail}</span>
+                            </div>
+                            <div className="flex items-center">
+                              <Building2 className="flex-shrink-0 mr-1.5 h-4 w-4 text-gray-400" />
+                              <span>{application.applicantBranch}</span>
+                              <span className="mx-2">•</span>
+                              <Calendar className="flex-shrink-0 mr-1.5 h-4 w-4 text-gray-400" />
+                              <span>{new Date(application.submittedAt).toLocaleDateString('zh-CN')}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* 第二列：审批状态 */}
+                      <td className="px-6 py-4 whitespace-nowrap text-center">
+                        <div className="flex justify-center">
                           {getStatusBadge(application.status)}
                         </div>
-                        <div className="mt-2 flex items-center text-sm text-gray-500">
-                          <Mail className="flex-shrink-0 mr-1.5 h-4 w-4" />
-                          <p className="truncate">{application.applicantEmail}</p>
-                          <span className="mx-2">•</span>
-                          <Building2 className="flex-shrink-0 mr-1.5 h-4 w-4" />
-                          <p>{application.applicantBranch}</p>
-                          <span className="mx-2">•</span>
-                          <Calendar className="flex-shrink-0 mr-1.5 h-4 w-4" />
-                          <p>{new Date(application.submittedAt).toLocaleDateString('zh-CN')}</p>
+                      </td>
+
+                      {/* 第三列：操作按钮 */}
+                      <td className="px-6 py-4 whitespace-nowrap text-center">
+                        <div className="flex justify-center space-x-2">
+                          <button
+                            onClick={() => {
+                              setSelectedApplication(application)
+                              setShowDetails(true)
+                            }}
+                            className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                          >
+                            <Eye size={14} className="mr-1" />
+                            查看
+                          </button>
+                          {application.status === 'pending' && (
+                            <>
+                              <button
+                                onClick={() => updateApplicationStatus(application.id, 'approved')}
+                                className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                              >
+                                <CheckCircle size={14} className="mr-1" />
+                                批准
+                              </button>
+                              <button
+                                onClick={() => updateApplicationStatus(application.id, 'rejected')}
+                                className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                              >
+                                <XCircle size={14} className="mr-1" />
+                                拒绝
+                              </button>
+                            </>
+                          )}
                         </div>
-                        <div className="mt-2 flex items-center text-sm text-gray-500">
-                          <Phone className="flex-shrink-0 mr-1.5 h-4 w-4" />
-                          <p className="truncate">{application.contactPersonAndTitle}</p>
-                          <span className="mx-2">•</span>
-                          <p>{application.contactPhone}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <button
-                          onClick={() => {
-                            setSelectedApplication(application)
-                            setShowDetails(true)
-                          }}
-                          className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                        >
-                          <Eye size={14} className="mr-1" />
-                          查看
-                        </button>
-                        {application.status === 'pending' && (
-                          <>
-                            <button
-                              onClick={() => updateApplicationStatus(application.id, 'approved')}
-                              className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-                            >
-                              <CheckCircle size={14} className="mr-1" />
-                              批准
-                            </button>
-                            <button
-                              onClick={() => updateApplicationStatus(application.id, 'rejected')}
-                              className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                            >
-                              <XCircle size={14} className="mr-1" />
-                              拒绝
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </li>
-              ))
-            )}
-          </ul>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
