@@ -34,6 +34,10 @@ export const API_ENDPOINTS = {
   // 系统配置
   SYSTEM_CONFIG: '/api/admin/system-config',
 
+  // 通知配置
+  NOTIFICATION_CONFIG: '/api/admin/notification-config',
+  TEST_NOTIFICATION: '/api/admin/test-notification',
+
   // 申请管理
   APPLICATIONS: '/api/admin/applications',
   APPLICATION_STATUS: (id: string) => `/api/admin/applications/${id}/status`,
