@@ -464,6 +464,10 @@ const routes = {
   // 管理员登录
   'POST /api/admin/login': handleAdminLogin,
 
+  // 系统配置管理
+  'GET /api/admin/system-config': handleGetSystemConfig,
+  'PUT /api/admin/system-config': handleUpdateSystemConfig,
+
   // 获取申请列表
   'GET /api/admin/applications': handleGetApplications,
 
@@ -1060,5 +1064,140 @@ async function updateApplicationStats(env) {
 
   } catch (error) {
     console.error('更新统计信息错误:', error);
+  }
+}
+
+// ==================== 系统配置处理函数 ====================
+
+// 系统配置验证
+function validateSystemConfig(data) {
+  const errors = [];
+  const validatedData = {};
+
+  // 系统标题
+  if (!data.title || typeof data.title !== 'string') {
+    errors.push(createError('title', '系统标题是必填项'));
+  } else if (data.title.trim().length < 2) {
+    errors.push(createError('title', '系统标题至少需要2个字符'));
+  } else if (data.title.trim().length > 50) {
+    errors.push(createError('title', '系统标题不能超过50个字符'));
+  } else {
+    validatedData.title = sanitizeString(data.title);
+  }
+
+  // 系统副标题
+  if (!data.subtitle || typeof data.subtitle !== 'string') {
+    errors.push(createError('subtitle', '系统副标题是必填项'));
+  } else if (data.subtitle.trim().length < 2) {
+    errors.push(createError('subtitle', '系统副标题至少需要2个字符'));
+  } else if (data.subtitle.trim().length > 30) {
+    errors.push(createError('subtitle', '系统副标题不能超过30个字符'));
+  } else {
+    validatedData.subtitle = sanitizeString(data.subtitle);
+  }
+
+  // 系统描述
+  if (!data.description || typeof data.description !== 'string') {
+    errors.push(createError('description', '系统描述是必填项'));
+  } else if (data.description.trim().length < 10) {
+    errors.push(createError('description', '系统描述至少需要10个字符'));
+  } else if (data.description.trim().length > 200) {
+    errors.push(createError('description', '系统描述不能超过200个字符'));
+  } else {
+    validatedData.description = sanitizeString(data.description);
+  }
+
+  if (errors.length > 0) {
+    return createValidationResult(false, null, errors);
+  }
+
+  return createValidationResult(true, validatedData);
+}
+
+// 处理获取系统配置
+async function handleGetSystemConfig(request, env) {
+  try {
+    // 验证管理员权限
+    const authResult = await verifyAdminAuth(request, env);
+    if (!authResult.success) {
+      return createResponse({
+        success: false,
+        message: authResult.message
+      }, 401);
+    }
+
+    // 获取系统配置
+    const configData = await env.SYSTEM_CONFIG.get('system_config');
+
+    let config = {
+      title: '供应商申请系统',
+      subtitle: 'PGS物流',
+      description: 'PGS物流供应商申请管理系统，提供供应商信息提交和审批管理功能'
+    };
+
+    if (configData) {
+      const savedConfig = JSON.parse(configData);
+      config = { ...config, ...savedConfig };
+    }
+
+    return createResponse({
+      success: true,
+      config: config
+    });
+
+  } catch (error) {
+    console.error('获取系统配置错误:', error);
+    return createResponse({
+      success: false,
+      message: '获取系统配置失败'
+    }, 500);
+  }
+}
+
+// 处理更新系统配置
+async function handleUpdateSystemConfig(request, env) {
+  try {
+    // 验证管理员权限
+    const authResult = await verifyAdminAuth(request, env);
+    if (!authResult.success) {
+      return createResponse({
+        success: false,
+        message: authResult.message
+      }, 401);
+    }
+
+    const body = await request.json();
+
+    // 验证配置数据
+    const validation = validateSystemConfig(body);
+    if (!validation.success) {
+      return createResponse({
+        success: false,
+        message: '配置数据格式错误',
+        errors: validation.errors
+      }, 400);
+    }
+
+    const config = {
+      ...validation.data,
+      updatedAt: new Date().toISOString(),
+      updatedBy: authResult.user.username
+    };
+
+    // 保存配置
+    await env.SYSTEM_CONFIG.put('system_config', JSON.stringify(config));
+
+    return createResponse({
+      success: true,
+      message: '系统配置更新成功',
+      config: config
+    });
+
+  } catch (error) {
+    console.error('更新系统配置错误:', error);
+    return createResponse({
+      success: false,
+      message: '更新系统配置失败，请稍后重试'
+    }, 500);
   }
 }
