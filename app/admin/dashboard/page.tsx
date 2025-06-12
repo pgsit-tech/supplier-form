@@ -11,6 +11,7 @@ import {
   Search,
   Filter,
   LogOut,
+  Lock,
   Calendar,
   Building2,
   Mail,
@@ -253,6 +254,13 @@ export default function AdminDashboard() {
               <span className="text-sm text-gray-700">
                 欢迎，{user?.name}
               </span>
+              <button
+                onClick={() => router.push('/admin/change-password')}
+                className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+              >
+                <Lock size={16} className="mr-1" />
+                修改密码
+              </button>
               <button
                 onClick={handleLogout}
                 className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 hover:text-gray-700 focus:outline-none transition-colors"

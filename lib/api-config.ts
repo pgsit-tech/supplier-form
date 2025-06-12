@@ -22,14 +22,15 @@ export const API_CONFIG = {
 export const API_ENDPOINTS = {
   // 健康检查
   HEALTH: '/api/health',
-  
+
   // 供应商申请
   SUBMIT_FORM: '/api/submit-form',
-  
+
   // 管理员认证
   ADMIN_LOGIN: '/api/admin/login',
   ADMIN_LOGOUT: '/api/admin/logout',
-  
+  ADMIN_CHANGE_PASSWORD: '/api/admin/change-password',
+
   // 申请管理
   APPLICATIONS: '/api/admin/applications',
   APPLICATION_STATUS: (id: string) => `/api/admin/applications/${id}/status`,
